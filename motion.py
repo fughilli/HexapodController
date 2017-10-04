@@ -8,14 +8,17 @@ class MotionController(object):
         '''Initializes a new MotionController
 
         @param motion_callback: A callback function which accepts as arguments a
-        set of actuator positions as enqueued by enqueue_control_point()'''
+        set of actuator positions as enqueued by nq()'''
         self.motion_queue = []
         self.motion_callback = motion_callback
         self.counter = 0.0
         self.current_dt = 0.0
 
-    def enqueue_control_point(self, control_point, dt):
+    def nq(self, control_point, dt):
         self.motion_queue.append((control_point, dt))
+
+    def depth(self):
+        return len(self.motion_queue)
 
     def update(self, dt):
         # If the queue has less than 2 elements, do nothing

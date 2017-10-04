@@ -30,7 +30,7 @@ def looper(function, total_time):
             break
 
 
-def round_robin_dispatcher(loop_functions):
+def round_robin_dispatcher(*loop_functions):
 
     def _dispatch(t, dt):
         for loop_function in loop_functions:
@@ -59,3 +59,9 @@ class PeriodicTimer(object):
             self.count = 0
             return True
         return False
+
+
+def rotate(l, n):
+    n = n % len(l)
+    return l[n:] + l[:n]
+

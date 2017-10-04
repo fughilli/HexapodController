@@ -1,9 +1,12 @@
 import motor
 import curses
+import math
+import json
 
 
 def calibrate_limits(motor, limit_angles):
     print "Starting calibration..."
+    motor.reset_limits()
     motor.enable = True
 
     stdscr = curses.initscr()
@@ -16,20 +19,20 @@ def calibrate_limits(motor, limit_angles):
         write_angle = 0
         stdscr.addstr(0, 10, "Use the arrow keys to move the motor")
         stdscr.addstr(1, 10, "to %f degrees" % (math.degrees(angle)))
-        stdscr.addstr(2, 10, "Press ENTER when done")
+        stdscr.addstr(2, 10, "Press right arrow key when done")
         stdscr.refresh()
 
         key = ''
-        while key != curses.KEY_ENTER:
+        while key != curses.KEY_RIGHT:
             key = stdscr.getch()
             stdscr.refresh()
             if key == curses.KEY_UP:
-                write_angle += math.radians(0.1)
+                write_angle += math.radians(0.5)
                 if write_angle > motor.limits[1]:
                     stdscr.addstr(4, 10, "Reached max limit")
                     write_angle = motor.limits[1]
             if key == curses.KEY_DOWN:
-                write_angle -= math.radians(0.1)
+                write_angle -= math.radians(0.5)
                 if write_angle < motor.limits[0]:
                     stdscr.addstr(4, 10, "Reached min limit")
                     write_angle = motor.limits[0]
@@ -56,15 +59,18 @@ class Linkage(object):
         self.motors = motors
 
         if limits == None:
-            limits = [m.limits for m in self.motors]
-
-        self.limits = limits
+            self.limits = [m.limits for m in self.motors]
+        else:
+            self.limits = limits
+            for m,limit in zip(self.motors,self.limits):
+                m.limits = limit
+        
 
     def serialize_calibration(self):
         return json.dumps({
             'limits': self.limits,
             'motor_ilimits': [m.limits for m in self.motors],
-            'motor_olimits': [m / outlimits for m in self.motors]
+            'motor_olimits': [m.outlimits for m in self.motors]
         })
 
     def deserialize_calibration(self, string):
@@ -86,3 +92,17 @@ class Linkage(object):
     def calibrate(self):
         for m, l in zip(self.motors, self.limits):
             calibrate_limits(m, l)
+
+    @property
+    def enable(self):
+        return self._enable
+
+    @enable.setter
+    def enable(self, enable):
+        self._enable = enable
+        for m in self.motors:
+            m.enable = enable
+
+    def move(self, *angles):
+        for m,a in zip(self.motors,angles):
+            m.angle = a

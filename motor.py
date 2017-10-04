@@ -3,6 +3,7 @@ import time
 import smbus
 import math
 import struct
+import util
 
 
 class MotorController(object):
@@ -46,13 +47,18 @@ class MotorController(object):
             self._write_out()
 
         def recalibrate(self, limits, outlimits):
+            limits = tuple(limits)
+            outlimits = tuple(outlimits)
             self.limits = limits
             self.outlimits = outlimits
             self._angle = (limits[0] + limits[1]) / 2
             self._out = (outlimits[0] + outlimits[1]) / 2
 
         def get_out(self, angle):
-            return map(angle, *(self.limits + self.outlimits))
+            return util.map(angle, *(self.limits + self.outlimits))
+
+        def reset_limits(self):
+            self.outlimits = (0, self.mc.limits[1] - self.mc.limits[0])
 
     def __init__(self, bus, address, num_motors):
         self.bus = bus
