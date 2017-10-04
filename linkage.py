@@ -2,12 +2,6 @@ import motor
 import curses
 
 
-class Joint(object):
-
-    def __init__(self, motor):
-        self.motor = motor
-
-
 def calibrate_limits(motor, limit_angles):
     print "Starting calibration..."
     motor.enable = True

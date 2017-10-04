@@ -2,12 +2,15 @@ import smbus
 import motor
 import time
 import math
+import linkage
 
 bus = smbus.SMBus(0)
 mc0 = motor.MotorController(bus, 0x40, 9)
 mc1 = motor.MotorController(bus, 0x42, 9)
 
 motors = mc0.motors + mc1.motors
+
+BATTERY_THRESHOLD = 7  # Volts
 
 
 def motor_sinusoid(motors, amplitude, offset, frequency):
@@ -20,24 +23,39 @@ def motor_sinusoid(motors, amplitude, offset, frequency):
     return motor_func
 
 
-def looper(function, total_time):
-    start_time = time.clock()
-    last_time = start_time
-
-    while (True):
-        current_time = time.clock()
-
-        function(current_time - start_time, current_time - last_time)
-
-        last_time = current_time
-
-        if (current_time - start_time >= total_time):
-            break
+battery_check_timer = PeriodicTimer(10)
 
 
-for i, m in enumerate(motors):
-    m.angle = motor.map(i, 0, len(motors), *m.limits)
+def battery_check_task(t, dt):
+    if battery_check_timer.tick(dt):
+        battery_voltage = mc0.battery
+        print("Battery level: %fV" % (battery_voltage,))
+        if battery_voltage < BATTERY_THRESHOLD:
+            print "Battery low! Turning off motors"
+            for motor in motors:
+                motor.enable = False
+                exit(1)
 
-def dispatch_loop
 
-looper(motor_sinusoid(motors[0:3], math.radians(90), 0, 0.1), 10)
+def motion_plan_task(t, dt):
+    for motion_controller in motion_controllers:
+        motion_controller.update(dt)
+
+
+leg_params = [[0, 0, 0] for _ in range(6)]
+
+with open('leg-spec.dat', 'r') as config_file:
+    for line in config_file.readlines():
+        motor_idx, leg_idx, leg_segment = [
+            t(s)
+            for t, s in zip((
+                int,) * 3, re.match('(\d+):(\d+)-(\d+)', line).groups())
+        ]
+        leg_params[leg_idx][leg_segment] = motor_idx
+
+legs = [
+    linkage.Linkage(
+        [motors[idx] for idx in leg_param],
+        limits=[(-math.pi / 4, math.pi / 4), (-math.pi / 2, math.pi / 2),
+                (-math.pi * 3 / 4, math.pi / 4)]) for leg_param in leg_params
+]
