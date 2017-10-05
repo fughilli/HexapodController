@@ -20,15 +20,23 @@ class ControlLoopSpooler(object):
                 self.command_func(*self.commands[self.command_idx])
                 self.command_idx = (self.command_idx + 1) % len(self.commands)
 
-command_loop = [
+right_command_loop = [
         (pi/8, pi/4, -3 * pi / 4, 0.2),
         (-pi/8, pi/4, -3 * pi / 4, 0.2),
         (-pi/8, 0, -pi/2, 0.6),
         (pi/8, 0, -pi/2, 0.2)
         ][::-1]
+left_command_loop = [
+        (pi/8, pi/4, -3 * pi / 4, 0.2),
+        (-pi/8, pi/4, -3 * pi / 4, 0.2),
+        (-pi/8, 0, -pi/2, 0.2),
+        (pi/8, 0, -pi/2, 0.6)
+        ]
+
+command_loop = left_command_loop
 
 command_looper1 = ControlLoopSpooler(command_loop, lambda a,b,c,t : mcs[0].nq((a,b,c), t))
-command_looper2 = ControlLoopSpooler(util.rotate(command_loop, 1), lambda a,b,c,t : mcs[1].nq((a,b,c), t))
+command_looper2 = ControlLoopSpooler(util.rotate(command_loop, 2), lambda a,b,c,t : mcs[1].nq((a,b,c), t))
 
 def refill_task(t, dt):
     while mcs[0].depth() < 10:
