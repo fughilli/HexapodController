@@ -42,6 +42,11 @@ class MotionController(object):
 
         self.motion_callback(*current)
 
+    def dump_motion_queue(self):
+        print 'motion queue contains:'
+        for point,deadline in self.motion_queue:
+            print 'going to %s in %04.3fs' % (','.join('%04.3f' % p for p in point), deadline)
+
 
 def debug_callback(*args):
     print "Debug callback invoked with:", ', '.join("%.5f" % x for x in args)

@@ -66,8 +66,10 @@ for i,leg in enumerate(legs):
         leg.load_calibration(calfilename)
     leg.move(0,0,0)
 
-def calibrate_all_legs():
+def calibrate_legs(indices=range(6)):
     for i,leg in enumerate(legs):
+        if not i in indices:
+            continue
         calfilename = 'leg_%d_cal.dat' % (i, )
         print "Calibrating leg %d; saving config to %s" % (i, calfilename)
         leg.calibrate()
