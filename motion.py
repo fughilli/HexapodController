@@ -51,3 +51,9 @@ class MotionController(object):
 def debug_callback(*args):
     print "Debug callback invoked with:", ', '.join("%.5f" % x for x in args)
     sys.stdout.flush()
+
+def test_motion_controllers(time, *mcs):
+    def _update(t, dt):
+        for mc in mcs:
+            mc.update(dt)
+    util.looper(_update, time)
