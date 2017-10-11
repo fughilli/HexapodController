@@ -1,9 +1,10 @@
 import tinyik
 import util
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator,LinearNDInterpolator
 import sys
 from joblib import Parallel, delayed
+import pickle
 
 
 
@@ -56,7 +57,7 @@ leg_length = 14.98+98+88
 #
 #qdims, ipoints, points = pp3.points(20)A
 
-step_size = 20
+step_size = 10
 
 x = np.linspace(0,leg_length,leg_length/step_size)
 y = np.linspace(-leg_length,leg_length,2*leg_length/step_size)
@@ -73,13 +74,31 @@ points = np.array(np.meshgrid(x,y,z)).T.reshape(-1,3)
 
 leg = tinyik.Actuator(['z', [14.98,0,0], 'y', [98,0,0], 'y', [88,0,0]])
 
+def out_of_range(angles):
+    if angles[0] > np.pi/3 or angles[0] < -np.pi/3:
+        return True
+    if angles[1] > np.pi/2 or angles[0] < -np.pi/2:
+        return True
+    if angles[2] > np.pi/4 or angles[0] < -3*np.pi/4:
+        return True
+    return False
+
+
 def compute_inverses(ees):
     leg = tinyik.Actuator(['z', [14.98,0,0], 'y', [98,0,0], 'y', [88,0,0]])
     leg.angles = [0, np.pi/4, np.pi/4]
     ret = []
     for ee in ees:
+        fail_counter = 0
         leg.ee = ee
-        ret.append(leg.angles)
+        while out_of_range(leg.angles) and fail_counter < 10:
+            leg.angles = (np.random.random((3,))-0.5)*(np.pi/2)
+            leg.ee = ee
+            fail_counter += 1
+        if fail_counter < 10:
+            ret.append(leg.angles)
+        else:
+            ret.append(np.array([np.nan]*3))
     return ret
 
 def split(array, n):
@@ -93,7 +112,19 @@ print "Computing IK table..."
 pointdata = np.concatenate(Parallel(n_jobs=-1, verbose=1)(
         map(delayed(compute_inverses), split(points, 32))))
 
-reshapeddata = pointdata.reshape(20,10,20,3)
+def save_lut(fname, data):
+    with open(fname, 'w') as lutfile:
+        lutfile.write(pickle.dumps({'points': data[0], 'pointdata': data[1]}))
+
+def load_lut(fname):
+    with open(fname, 'r') as lutfile:
+        d = pickle.loads(lutfile.read())
+        return d['points'],d['pointdata']
+
+save_lut('lut_hr.dat', (points, pointdata))
+
+points,pointdata = load_lut('lut_hr.dat')
 
 print "Initializing interpolator..."
-interpolator = RegularGridInterpolator((x,y,z),reshapeddata)
+#interpolator = RegularGridInterpolator((x,y,z),reshapeddata)
+interpolator = LinearNDInterpolator(points,pointdata)
