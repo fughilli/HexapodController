@@ -65,3 +65,14 @@ def rotate(l, n):
     n = n % len(l)
     return l[n:] + l[:n]
 
+class ControlLoopSpooler(object):
+    def __init__(self, commands, command_func):
+        self.command_func = command_func
+        self.commands = commands
+        self.command_idx = 0
+
+    def spool(self, n=1):
+        if len(self.commands):
+            for _ in range(n):
+                self.command_func(*self.commands[self.command_idx])
+                self.command_idx = (self.command_idx + 1) % len(self.commands)
