@@ -25,12 +25,19 @@ else:
             interpfile.write(pickle.dumps(interp))
     print "Leg LUT initialized."
 
-leg_routine = [((100, -40, 100), 0.6), ((100, 40, 100), 0.2),
-               ((100, 40, 40), 0.2), ((100, -40, 40), 0.2)]
+#leg_routine = [((120, -40, 100), 0.6),
+#               ((80, 40, 100), 0.2),
+#               ((80, 40, 40), 0.2),
+#               ((120, -40, 40), 0.2)]
+
+leg_routine = [((90, -40, 150), 0.4),
+               ((90,  40, 150), 0.4),
+               ((10,  40, 150), 0.4),
+               ((10, -40, 150), 0.4)]
 
 
 def get_leg_angles(leg_ee):
-    return interp(*leg_ee)
+    return tuple(x for x in interp(*leg_ee))
 
 
 leg_routine_subdivided = motion.subdivide_routine(leg_routine, 0.05)
@@ -49,12 +56,12 @@ command_looper.spool(10)
 
 
 def refill_task(t, dt):
-    while mc.depth() < 10:
+    while mcs[0].depth() < 10:
         command_looper.spool(10)
 
 
 def motion_plan_task(t, dt):
-    mc.update(dt)
+    mcs[0].update(dt)
 
 
 def execute():
