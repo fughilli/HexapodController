@@ -62,9 +62,8 @@ class Linkage(object):
             self.limits = [m.limits for m in self.motors]
         else:
             self.limits = limits
-            for m,limit in zip(self.motors,self.limits):
+            for m, limit in zip(self.motors, self.limits):
                 m.limits = limit
-        
 
     def serialize_calibration(self):
         return json.dumps({
@@ -104,5 +103,5 @@ class Linkage(object):
             m.enable = enable
 
     def move(self, *angles):
-        for m,a in zip(self.motors,angles):
+        for m, a in zip(self.motors, angles):
             m.angle = a

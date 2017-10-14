@@ -4,10 +4,10 @@ import re
 import smbus
 import time
 
-import linkage
-import motion
-import motor
-import util
+import lib.linkage
+import lib.motion
+import lib.motor
+import lib.util
 
 bus = smbus.SMBus(0)
 mc0 = lib.motor.MotorController(bus, 0x40, 9)
@@ -75,3 +75,20 @@ motion_controllers = [
 def motion_plan_task(t, dt):
     for motion_controller in motion_controllers:
         motion_controller.update(dt)
+
+
+def run_routine(routinefname, leg_idx, t):
+    routine = lib.motion.read_routine(routinefname)
+    routine_spooler = lib.util.ControlLoopSpooler(
+        routine, lambda c, dt: motion_controllers[leg_idx].nq(c, dt))
+
+    def spool_task(t, dt):
+        if motion_controllers[leg_idx].depth() < 10:
+            routine_spooler.spool(10)
+
+    legs[leg_idx].enable = True
+    lib.util.looper(
+        lib.util.round_robin_dispatcher(
+            spool_task, (lambda t, dt: motion_controllers[leg_idx].update(dt))),
+        t)
+    legs[leg_idx].enable = False

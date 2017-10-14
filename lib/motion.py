@@ -1,3 +1,4 @@
+import json
 import math
 import numpy
 import sys
@@ -104,3 +105,12 @@ def check_routine(routine):
         if True in numpy.isnan(cp):
             return False
     return True
+
+
+def write_routine(filename, routine):
+    with open(filename, 'w') as routinefile:
+        routinefile.write(json.dumps(routine))
+
+
+def read_routine(filename):
+    return json.loads(open(filename, 'r').read())

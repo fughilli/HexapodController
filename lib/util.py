@@ -133,13 +133,15 @@ def _eval(node):
     if isinstance(node, ast.Num):
         return node.n
     elif isinstance(node, ast.Name):
-        return {'pi': numpy.pi}[node.id]
+        return {'pi': numpy.pi, 'sqrt': numpy.sqrt}[node.id]
     elif isinstance(node, ast.Tuple):
         return tuple(_eval(x) for x in node.elts)
     elif isinstance(node, ast.BinOp):
         return operators[type(node.op)](_eval(node.left), _eval(node.right))
     elif isinstance(node, ast.UnaryOp):
         return operators[type(node.op)](_eval(node.operand))
+    elif isinstance(node, ast.Call):
+        return _eval(node.func)(*(_eval(arg) for arg in node.args))
     raise TypeError(node)
 
 
