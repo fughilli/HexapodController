@@ -50,7 +50,7 @@ legs = [
 ]
 
 for i, leg in enumerate(legs):
-    calfilename = 'leg_%d_cal.dat' % (i,)
+    calfilename = 'cal/leg_%d_cal.dat' % (i,)
     if os.path.exists(calfilename):
         print "Loaded calibration for leg %d from %s" % (i, calfilename)
         leg.load_calibration(calfilename)
@@ -67,11 +67,11 @@ def calibrate_legs(indices=range(6)):
         leg.save_calibration(calfilename)
 
 
-lib.motion.controllers = [
+motion_controllers = [
     lib.motion.MotionController(lambda pos: leg.move(*pos)) for leg in legs
 ]
 
 
-def lib.motion.plan_task(t, dt):
-    for lib.motion.controller in lib.motion.controllers:
-        lib.motion.controller.update(dt)
+def motion_plan_task(t, dt):
+    for motion_controller in motion_controllers:
+        motion_controller.update(dt)
