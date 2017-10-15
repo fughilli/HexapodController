@@ -86,6 +86,13 @@ class ControlLoopSpooler(object):
                 self.command_idx = (self.command_idx + 1) % len(self.commands)
 
 
+def make_refill_task(spooler, mc, mindepth):
+    def _refill_task(dt):
+        if mc.depth() < mindepth:
+            spooler.spool(mindepth)
+    return _refill_task
+
+
 def load_interpolator(interp_file_name):
     return pickle.loads(open(interp_file_name, 'r').read())
 
