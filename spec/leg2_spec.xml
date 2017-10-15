@@ -1,0 +1,8 @@
+<armature>
+ <joint axis="(0,0,-1)" dlimits="(-60, 60)" />
+ <linkage axis="(15,0,0)" />
+ <joint axis="(0,-1,0)" dlimits="(-90, 90)" />
+ <linkage axis="(sqrt(50**2 - 8.5**2),0,-8.5)" />
+ <joint axis="(0,-1,0)" dlimits="(-180, 0)" />
+ <linkage axis="(sqrt(60**2 - 10**2),0,10)" />
+</armature>
