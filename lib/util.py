@@ -2,7 +2,7 @@ from scipy.interpolate import LinearNDInterpolator
 import ast
 import math
 import numpy
-import operator as op
+import operator
 import pickle
 import time
 
@@ -124,12 +124,12 @@ def split(array, n):
 
 def _eval(node):
     operators = {
-        ast.Add: op.add,
-        ast.Sub: op.sub,
-        ast.Mult: op.mul,
-        ast.Div: op.truediv,
-        ast.Pow: op.pow,
-        ast.USub: op.neg
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.USub: operator.neg
     }
     if isinstance(node, ast.Num):
         return node.n
