@@ -87,7 +87,7 @@ class ControlLoopSpooler(object):
 
 
 def make_refill_task(spooler, mc, mindepth):
-    def _refill_task(dt):
+    def _refill_task(t, dt):
         if mc.depth() < mindepth:
             spooler.spool(mindepth)
     return _refill_task
