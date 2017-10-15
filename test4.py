@@ -49,7 +49,7 @@ command_looper = util.ControlLoopSpooler(
 
 legs[0].enable = True
 legpos = (0, 0, 0)
-legs[0].move(*legpos)
+legs[0].move(legpos)
 mcs[0].nq(legpos, 0)
 
 command_looper.spool(10)

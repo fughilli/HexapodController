@@ -54,7 +54,7 @@ for i, leg in enumerate(legs):
     if os.path.exists(calfilename):
         print "Loaded calibration for leg %d from %s" % (i, calfilename)
         leg.load_calibration(calfilename)
-    leg.move(0, 0, 0)
+    leg.move((0, 0, 0))
 
 
 def calibrate_legs(indices=range(6)):
@@ -68,7 +68,7 @@ def calibrate_legs(indices=range(6)):
 
 
 motion_controllers = [
-    lib.motion.MotionController(lambda pos: leg.move(*pos)) for leg in legs
+    lib.motion.MotionController(leg.move) for leg in legs
 ]
 
 

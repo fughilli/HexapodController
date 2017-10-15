@@ -102,6 +102,6 @@ class Linkage(object):
         for m in self.motors:
             m.enable = enable
 
-    def move(self, *angles):
+    def move(self, angles):
         for m, a in zip(self.motors, angles):
             m.angle = a

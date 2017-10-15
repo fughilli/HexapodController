@@ -31,7 +31,7 @@ print "Planting feet."
 for mc, leg in zip(mcs, legs):
     leg.enable = True
     legpos = (0, hip_down_angle, knee_down_angle)
-    leg.move(*legpos)
+    leg.move(legpos)
     mc.nq(legpos, 0)
 
 command_looper1.spool(8)
