@@ -54,7 +54,7 @@ def readtype(t):
     val = None
     while True:
         try:
-            val = t(sys.stdin.readline())
+            val = t(sys.stdin.readline().strip())
             break
         except:
             print 'Value cannot be interpreted as %s' % (t,)
@@ -63,7 +63,7 @@ def readtype(t):
 
 def readyn(default='y'):
     while True:
-        line = sys.stdin.readline()
+        line = sys.stdin.readline().strip()
         if line == '':
             line = default
         if line.lower() in ('yes', 'y', 'ye'):
