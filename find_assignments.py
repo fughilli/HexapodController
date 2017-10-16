@@ -60,6 +60,20 @@ def readtype(t):
     return val
 
 
+def readyn(default='y'):
+    while True:
+        line = sys.stdin.readline()
+        if line == '':
+            line = default
+        if line.lower() in ('yes', 'y', 'ye'):
+            return True
+        elif line.lower() in ('no', 'n'):
+            return False
+        else:
+            sys.stdout.write('Please enter "y(es)" or "n(o)" (default=%s): ' %
+                             (default,))
+
+
 args = parser.parse_args(sys.argv[1:])
 
 # Figure out the armature geometry
@@ -80,12 +94,20 @@ outbuf = ''
 print 'Starting assignment determination...'
 
 for i, motor in enumerate(motors):
-    print 'Twitching motor %d (%d on controller at %s)...' % (
-        i, motor.index, hex(motor.mc.address))
-    motor.twitch()
-    print 'Which armature was that?'
+    sys.stdout.write('Press ENTER when ready')
+    sys.stdin.readline()
+    while True:
+        print 'Twitching motor %d (%d on controller at %s)...' % (
+            i, motor.index, hex(motor.mc.address))
+        motor.twitch()
+        sys.stdout.write('Repeat twitch? (y/N): ')
+        if readyn(default='n'):
+            break
+    sys.stdout.write('Which armature was that (0-%d): ' %
+                     (args.numchannels - 1,))
     armature_idx = readtype(int)
-    print 'Which joint on that armature was that?'
+    sys.stdout.write('Which joint on the armature was that (0-%d): ' %
+                     (numjoints - 1,))
     joint_idx = readtype(int)
     outbuf += ('%d-%d:%d-%d' % (motor.mc.address, motor.index, armature_idx,
                                 joint_idx))
