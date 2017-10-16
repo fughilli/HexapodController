@@ -102,13 +102,15 @@ for i, motor in enumerate(motors):
             i, motor.index, hex(motor.mc.address))
         motor.twitch()
         sys.stdout.write('Repeat twitch? (y/N): ')
-        if readyn(default='n'):
+        if not readyn(default='n'):
             break
     sys.stdout.write('Which armature was that (0-%d): ' %
-                     (args.numchannels - 1,))
+                     (args.numarmatures - 1,))
     armature_idx = readtype(int)
     sys.stdout.write('Which joint on the armature was that (0-%d): ' %
                      (numjoints - 1,))
     joint_idx = readtype(int)
-    outbuf += ('%d-%d:%d-%d' % (motor.mc.address, motor.index, armature_idx,
+    outbuf += ('%d-%d:%d-%d\n' % (motor.mc.address, motor.index, armature_idx,
                                 joint_idx))
+
+open(args.spec, 'w').write(outbuf)
