@@ -3,12 +3,13 @@
 import argparse
 import math
 import numpy
-import sys
 import smbus
+import sys
 
+import lib.iksolve
 import lib.motion
-import lib.util
 import lib.motor
+import lib.util
 
 parser = argparse.ArgumentParser(
     description='Determine the motor pin assignments on the robot.')
