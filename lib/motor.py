@@ -68,9 +68,8 @@ class MotorController(object):
             time.sleep(0.05)
             self.angle = self.limits[1]
             time.sleep(0.05)
-            self.angle = oldangle
-            time.sleep(0.2)
             self.enable = oldenable
+            self.angle = oldangle
 
     def __init__(self, bus, address, num_motors):
         self.bus = bus
