@@ -16,7 +16,7 @@ parser.add_argument(
     '--index',
     type=int,
     required=True,
-    help='The index of the leg to run the routine on')
+    help='The index of the leg to run the routine on.')
 parser.add_argument(
     '-t',
     '--time',
