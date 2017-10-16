@@ -136,7 +136,7 @@ class Joint(object):
 
     @property
     def matrix(self):
-        return lib.util.rotation_matrix(self.axis, self.angle)
+        return util.rotation_matrix(self.axis, self.angle)
 
     @property
     def angle(self):
