@@ -33,7 +33,7 @@ def battery_check_task(t, dt):
 
 leg_params = [[0, 0, 0] for _ in range(6)]
 
-with open('spec/leg_mapping.dat', 'r') as config_file:
+with open('spec/leg2_mapping.dat', 'r') as config_file:
     for line in config_file.readlines():
         bus_address, motor_idx, leg_idx, leg_segment = [
             t(s)
@@ -53,7 +53,7 @@ legs = [
 ]
 
 for i, leg in enumerate(legs):
-    calfilename = 'cal/leg_%d_cal.dat' % (i,)
+    calfilename = 'cal/leg2_%d_cal.dat' % (i,)
     if os.path.exists(calfilename):
         print "Loaded calibration for leg %d from %s" % (i, calfilename)
         leg.load_calibration(calfilename)
@@ -64,7 +64,7 @@ def calibrate_legs(indices=range(6)):
     for i, leg in enumerate(legs):
         if not i in indices:
             continue
-        calfilename = 'leg_%d_cal.dat' % (i,)
+        calfilename = 'cal/leg2_%d_cal.dat' % (i,)
         print "Calibrating leg %d; saving config to %s" % (i, calfilename)
         leg.calibrate()
         leg.save_calibration(calfilename)
