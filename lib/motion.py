@@ -82,7 +82,7 @@ def subdivide_routine(routine, dt):
     result_points = mc.total_time() / dt
     mc.motion_queue.append(routine[0])
     mc.update(0)  # Dump the first control point to ret
-    for _ in range(int(result_points)):
+    for _ in range(int(result_points) - 1):
         mc.update(dt)
     return ret
 
