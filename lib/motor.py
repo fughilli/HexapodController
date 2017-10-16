@@ -60,6 +60,14 @@ class MotorController(object):
         def reset_limits(self):
             self.outlimits = (0, self.mc.limits[1] - self.mc.limits[0])
 
+        def twitch(self):
+            oldangle = self.angle
+            self.angle = limits[0]
+            time.sleep(0.05)
+            self.angle = limits[1]
+            time.sleep(0.05)
+            self.angle = oldangle
+
     def __init__(self, bus, address, num_motors):
         self.bus = bus
         self.address = address
