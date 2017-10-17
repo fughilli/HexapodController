@@ -114,3 +114,22 @@ def write_routine(filename, routine):
 
 def read_routine(filename):
     return json.loads(open(filename, 'r').read())
+
+
+def rotate_t(r, t):
+    if len(r) <= 1:
+        return r
+    t = float(t)
+    front = r[:]
+    back = []
+    while t > float(front[0][1]):
+        t -= front[0][1]
+        back.append(front.pop(0))
+    if not float(t) == 0.0:
+        back.append((front[0][0], t))
+        front[0] = (util.lerp_tuple(front[0][0], front[1][0], t / front[0][1]),
+                    front[0][1] - t)
+    return front + back
+
+    n = n % len(l)
+    return l[n:] + l[:n]
