@@ -14,9 +14,15 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-i',
     '--index',
-    type=int,
+    type=str,
     required=True,
-    help='The index of the leg to run the routine on.')
+    help='The index of the leg to run the routine on (or a tuple for multiple).')
+parser.add_argument(
+    '-m',
+    '--multiplier',
+    type=float,
+    default=1.0,
+    help='The speed multiplier to run the routine at.')
 parser.add_argument(
     '-t',
     '--time',
@@ -28,21 +34,40 @@ parser.add_argument(
     '--routine',
     type=str,
     required=True,
-    help='Routine file containing the routine to run.')
+    help='Routine file containing the routine to run (or a tuple of files for multiple).')
 
 args = parser.parse_args(sys.argv[1:])
 
 routine = lib.motion.read_routine(args.routine)
 
-mc = hexapod.motion_controllers[args.index]
-leg = hexapod.legs[args.index]
+index_parsed = lib.util.evaluate_arithmetic(args.index)
 
-command_spooler = lib.util.ControlLoopSpooler(routine, mc.nq)
+leg_indices = []
 
-refill_task = lib.util.make_refill_task(command_spooler, mc, 100)
+if isinstance(index_parsed, tuple):
+    leg_indices = list(index_parsed)
+elif isinstance(index_parsed, int):
+    leg_indices.append(index_parsed)
+else:
+    raise Exception('index must be a single integer, or a tuple of integers')
 
-leg.enable = True
+mcs = [hexapod.motion_controllers[i] for i in leg_indices]
+legs = [hexapod.legs[i] for i in leg_indices]
+
+command_spoolers = [lib.util.ControlLoopSpooler(routine, mc.nq) for mc in mcs]
+
+refill_tasks = [lib.util.make_refill_task(command_spooler, mc, 100) for command_spooler,mc in zip(command_spoolers,mcs)]
+
+multiplier = args.multiplier
+
+def scaled_motion_plan_task(t, dt):
+    for mc in mcs:
+        mc.update(multiplier * dt)
+
+for leg in legs:
+    leg.enable = True
 lib.util.looper(
-    lib.util.round_robin_dispatcher(refill_task, hexapod.motion_plan_task),
+    lib.util.round_robin_dispatcher(*(refill_tasks + [scaled_motion_plan_task, hexapod.battery_check_task])),
     args.time)
-leg.enable = False
+for leg in legs:
+    leg.enable = False
