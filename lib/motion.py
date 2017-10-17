@@ -24,7 +24,7 @@ class MotionController(object):
         return len(self.motion_queue)
 
     def total_time(self):
-        return sum(x[1] for x in self.motion_queue)
+        return routine_time(self.motion_queue)
 
     def update(self, dt):
         # If the queue has one element left, do nothing
@@ -114,6 +114,10 @@ def write_routine(filename, routine):
 
 def read_routine(filename):
     return json.loads(open(filename, 'r').read())
+
+
+def routine_time(routine):
+    return sum(t for c, t in routine)
 
 
 def rotate_t(r, t):
