@@ -87,9 +87,11 @@ class ControlLoopSpooler(object):
 
 
 def make_refill_task(spooler, mc, mindepth):
+
     def _refill_task(t, dt):
         if mc.depth() < mindepth:
             spooler.spool(mindepth)
+
     return _refill_task
 
 
@@ -150,6 +152,8 @@ def _eval(node):
         return operators[type(node.op)](_eval(node.operand))
     elif isinstance(node, ast.Call):
         return _eval(node.func)(*(_eval(arg) for arg in node.args))
+    elif isinstance(node, ast.Str):
+        return node.s
     raise TypeError(node)
 
 
