@@ -48,8 +48,8 @@ legs = [
             filter(lambda x: x.address == addr, (mc0, mc1))[0].motors[idx]
             for addr, idx in leg_param
         ],
-        limits=[(-math.pi / 3, math.pi / 3), (-math.pi / 3, math.pi / 2),
-                (-math.pi * 3 / 4, math.pi / 4)]) for leg_param in leg_params
+        limits=[(-math.pi / 3, math.pi / 3), (-math.pi / 2, math.pi / 2),
+                (-math.pi, 0)]) for leg_param in leg_params
 ]
 
 for i, leg in enumerate(legs):

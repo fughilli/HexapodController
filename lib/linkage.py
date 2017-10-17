@@ -2,6 +2,7 @@ import motor
 import curses
 import math
 import json
+import time
 
 
 def calibrate_limits(motor, limit_angles):
@@ -17,6 +18,7 @@ def calibrate_limits(motor, limit_angles):
 
     for angle in limit_angles:
         write_angle = 0
+        stdscr.erase()
         stdscr.addstr(0, 10, "Use the arrow keys to move the motor")
         stdscr.addstr(1, 10, "to %f degrees" % (math.degrees(angle)))
         stdscr.addstr(2, 10, "Press right arrow key when done")
@@ -25,26 +27,41 @@ def calibrate_limits(motor, limit_angles):
         key = ''
         while key != curses.KEY_RIGHT:
             key = stdscr.getch()
-            stdscr.refresh()
             if key == curses.KEY_UP:
                 write_angle += math.radians(0.5)
                 if write_angle > motor.limits[1]:
                     stdscr.addstr(4, 10, "Reached max limit")
                     write_angle = motor.limits[1]
+                else:
+                    stdscr.addstr(4, 10, "                 ")
             if key == curses.KEY_DOWN:
                 write_angle -= math.radians(0.5)
                 if write_angle < motor.limits[0]:
                     stdscr.addstr(4, 10, "Reached min limit")
                     write_angle = motor.limits[0]
+                else:
+                    stdscr.addstr(4, 10, "                 ")
             motor.angle = write_angle
+            stdscr.refresh()
 
         outlimits.append(motor.get_out(write_angle))
 
     motor.enable = False
 
-    curses.endwin()
+    stdscr.erase()
+    stdscr.addstr(1, 10, "Resetting position")
+    stdscr.refresh()
+
 
     motor.recalibrate(limit_angles, outlimits)
+
+    motor.enable = True
+
+    time.sleep(1)
+
+    motor.enable = False
+
+    curses.endwin()
 
     print "Finished calibration"
 

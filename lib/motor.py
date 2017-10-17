@@ -55,7 +55,7 @@ class MotorController(object):
             self._out = (outlimits[0] + outlimits[1]) / 2
 
         def get_out(self, angle):
-            return util.map(angle, *(self.limits + self.outlimits))
+            return util.clamp(util.map(angle, *(self.limits + self.outlimits)), *self.outlimits)
 
         def reset_limits(self):
             self.outlimits = (0, self.mc.limits[1] - self.mc.limits[0])
