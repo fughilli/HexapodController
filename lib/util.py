@@ -25,13 +25,18 @@ def lerp_tuple(at, bt, t):
     return tuple(be * t + ae * (1 - t) for ae, be in zip(at, bt))
 
 
-def looper(function, total_time):
+def looper(function, total_time=None):
     start_time = time.time()
     last_time = start_time
     while (True):
         current_time = time.time()
         function(current_time - start_time, current_time - last_time)
         last_time = current_time
+
+        # Never terminate if total_time is None
+        if total_time == None:
+            continue
+
         if (current_time - start_time >= total_time):
             break
 
