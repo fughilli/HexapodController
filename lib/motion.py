@@ -20,6 +20,10 @@ class MotionController(object):
     def nq(self, control_point, dt):
         self.motion_queue.append((control_point, dt))
 
+    def nqr(self, routine):
+        for control_point, dt in routine:
+            self.motion_queue.append((control_point, dt))
+
     def depth(self):
         return len(self.motion_queue)
 
