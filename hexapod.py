@@ -28,7 +28,8 @@ def battery_check_task(t, dt):
             print "Battery low! Turning off motors"
             for motor in motors:
                 lib.motor.enable = False
-            exit(1)
+            return False
+    return True
 
 
 leg_params = [[0, 0, 0] for _ in range(6)]

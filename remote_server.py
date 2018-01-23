@@ -3,6 +3,8 @@
 import numpy
 import socket
 import threading
+import signal
+import sys
 
 import lib.control
 import lib.motion
@@ -114,6 +116,7 @@ run_flag = True
 
 def server_thread():
     while (run_flag):
+        print "Listening thread starting new socket"
         clientsocket, address = serversocket.accept()
         try:
             cs = lib.control.ControlSocket(clientsocket)
@@ -122,11 +125,8 @@ def server_thread():
                 mp.direction = c['direction']
                 mp.walk = bool(c['walk'])
         except Exception as e:
-            print e.message
-            continue
+            print "Exception in listening thread:", e.message
         clientsocket.close()
-
-
 
 def motion_plan_task(t, dt):
     for mc in mcs:
@@ -135,23 +135,33 @@ def motion_plan_task(t, dt):
 
 st = threading.Thread(target=server_thread)
 
+def signal_handler(signal, frame):
+    global run_flag
+    run_flag = False
+    print "Caught Ctrl-C. Exiting..."
+
+signal.signal(signal.SIGINT, signal_handler)
+
+print "Starting listening thread"
 st.start()
 
+print "Enabling legs"
 for leg in hexapod.legs:
     leg.enable = True
 
-try:
-    lib.util.looper(
-        lib.util.round_robin_dispatcher(mp.get_update_task(),
-                                        motion_plan_task))
-except Exception as e:
-    pass
+print "Starting loop"
+lib.util.looper(lib.util.round_robin_dispatcher(mp.get_update_task(),
+                                                motion_plan_task
+                                                ),
+                run_test=(lambda : run_flag))
 
+print "Disabling legs"
 for leg in hexapod.legs:
     leg.enable = False
 
 run_flag = False
 
+print "Joining listening thread"
 st.join()
 
 serversocket.close()
