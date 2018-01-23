@@ -9,7 +9,7 @@ import lib.motion
 import lib.motor
 import lib.util
 
-bus = smbus.SMBus(0)
+bus = smbus.SMBus(1)
 mc0 = lib.motor.MotorController(bus, 0x40, 9)
 mc1 = lib.motor.MotorController(bus, 0x42, 9)
 
