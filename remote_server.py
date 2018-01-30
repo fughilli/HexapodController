@@ -111,19 +111,20 @@ mp = MotionPlanner(mcs, [0, 2, 4], [1, 3, 5], [0, -4, -8, -12, -16, -20],
 run_flag = True
 
 def update_control(_, control):
-    angle = int(math.atan2(control.rpad_y, control.rpad_x) * num_directions / (2 * math.pi)) % num_directions
     walk = math.sqrt(control.rpad_y ** 2 + control.rpad_x ** 2) > 2048
-
+    if walk:
+        angle = int(math.atan2(control.rpad_y, -control.rpad_x) * num_directions / (2 * math.pi)) % num_directions
+    else:
+        angle = 0
     mp.direction = angle
     mp.walk = walk
 
 
 def server_thread():
+    sc = SteamController(callback=update_control)
     while (run_flag):
         try:
-            sc = SteamController(callback=update_control)
-            while (run_flag):
-                sc.handleEvents()
+            sc.handleEvents()
         except Exception as e:
             print "Exception in listening thread:", e.message
 
