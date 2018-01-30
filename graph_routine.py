@@ -57,7 +57,7 @@ ax = fig.add_subplot(111, projection='3d')
 points = [x[0] for x in routine]
 
 xs, ys, zs = zip(*points)
-ax.plot(xs, ys, zs)
+ax.plot(xs, ys, zs, marker='o')
 
 limits = numpy.array([ax.get_xlim3d(), ax.get_ylim3d(), ax.get_zlim3d()])
 centers = numpy.array([sum(lim) / 2 for lim in limits])
