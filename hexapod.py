@@ -22,7 +22,7 @@ battery_check_timer = lib.util.PeriodicTimer(10)
 
 def battery_check_task(t, dt):
     if battery_check_timer.tick(dt):
-        battery_voltage = mc0.battery
+        battery_voltage = mc1.battery
         print("Battery level: %fV" % (battery_voltage,))
         if battery_voltage < BATTERY_THRESHOLD:
             print "Battery low! Turning off motors"

@@ -76,6 +76,8 @@ class MotorController(object):
         self.address = address
         self.num_motors = num_motors
 
+        self.reset_controller()
+
         self.read_limits()
 
         self.motors = [
@@ -94,17 +96,20 @@ class MotorController(object):
 
     def read_adc(self):
         adc_data = self.bus.read_i2c_block_data(self.address,
-                                                (self.num_motors * 2) + 4, 2)
+                                                (self.num_motors * 2) + 4 + 2, 2)
         adc_data_buf = ''.join(chr(x) for x in adc_data)
         self.raw_adc = struct.unpack('H', adc_data_buf)[0]
+
+    def reset_controller(self):
+        self.bus.write_i2c_block_data(self.address, (self.num_motors * 2) + 4, [0xFF, 0xFF])
 
     @property
     def battery(self):
         self.read_adc()
         ADC_PRECISION = 2**10.0
         VCC = 3.3
-        R1 = 100e3
-        R2 = 47e3
+        R1 = 120e3
+        R2 = 68e3
         FUDGE = 0.03
         return self.raw_adc / ADC_PRECISION * VCC * (R1 + R2) / R2 + FUDGE
 
