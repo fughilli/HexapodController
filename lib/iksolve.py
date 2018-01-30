@@ -22,6 +22,16 @@ class Armature(object):
             for part in self.parts)).dot(numpy.array([0, 0, 0, 1]).T)
         return result[:3]
 
+    def forward_chain(self, angles):
+        for x, angle in zip(self.joints, angles):
+            x._angle = angle
+        matrices = (part.matrix for part in self.parts)
+        results = []
+        for matrix in list(matrices)[::-1]:
+            results.append(numpy.array([0, 0, 0, 1]).T)
+            results = [matrix.dot(r) for r in results]
+        return [r[:3] for r in results]
+
     def reverse(self, target=None):
         target = numpy.asarray(target)
 
