@@ -15,10 +15,24 @@ class MotionController(object):
         self.motion_queue = []
         self.motion_callback = motion_callback
         self.counter = 0.0
-        self.current_dt = 0.0
+        self.current_pos = (0,0,0)
 
     def nq(self, control_point, dt):
         self.motion_queue.append((control_point, dt))
+
+    # Enqueue immediate (starts from current position towards new target)
+    def nqi(self, control_point, dt):
+        self.motion_queue = []
+        self.counter = 0.0
+        self.motion_queue.append((self.current_pos, dt))
+        self.motion_queue.append((control_point, 0.0))
+
+    # Enqueue immediate with a specific velocity (smooth until control_point is reached)
+    def nqi_v(self, control_point, velocity):
+        if (self.current_pos == None):
+            self.nqi(control_point, 0.0)
+        dist = util.dist_tuple(self.current_pos, control_point)
+        self.nqi(control_point, dist / velocity)
 
     def nqr(self, routine):
         for control_point, dt in routine:
@@ -46,11 +60,11 @@ class MotionController(object):
                 self.motion_callback(self.motion_queue[0][0])
                 return
 
-        current = util.lerp_tuple(self.motion_queue[0][0],
-                                  self.motion_queue[1][0],
-                                  self.counter / self.motion_queue[0][1])
+        self.current_pos = util.lerp_tuple(
+            self.motion_queue[0][0], self.motion_queue[1][0],
+            self.counter / self.motion_queue[0][1])
 
-        self.motion_callback(current)
+        self.motion_callback(self.current_pos)
 
     def dump_motion_queue(self):
         print 'motion queue contains:'

@@ -25,7 +25,11 @@ def lerp_tuple(at, bt, t):
     return tuple(be * t + ae * (1 - t) for ae, be in zip(at, bt))
 
 
-def looper(function, total_time=None, run_test=(lambda : True)):
+def dist_tuple(at, bt):
+    return math.sqrt(sum((a - b)**2 for a, b in zip(at, bt)))
+
+
+def looper(function, total_time=None, run_test=(lambda: True)):
     start_time = time.time()
     last_time = start_time
     while (run_test()):
