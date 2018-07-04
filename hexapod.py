@@ -15,7 +15,7 @@ mc1 = lib.motor.MotorController(bus, 0x42, 9)
 
 motors = mc0.motors + mc1.motors
 
-BATTERY_THRESHOLD = 3.6  # Volts
+BATTERY_THRESHOLD = 3.2 * 2  # Volts
 
 battery_check_timer = lib.util.PeriodicTimer(10)
 
