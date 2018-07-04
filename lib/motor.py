@@ -5,6 +5,20 @@ import math
 import struct
 import util
 
+retry_count = 100
+
+
+def retry_lambda(l, args, r):
+    last_exception = Exception("No retries!")
+    while True:
+        if r == 0:
+            raise last_exception
+        try:
+            return l()
+        except Exception as e:
+            last_exception = e
+        r -= 1
+
 
 class MotorController(object):
 
@@ -33,6 +47,9 @@ class MotorController(object):
             self._out = self.get_out(self._angle)
             self._write_out()
 
+        def set_angle(self, angle):
+            self.angle = angle
+
         @property
         def out(self):
             return self._out
@@ -55,7 +72,9 @@ class MotorController(object):
             self._out = (outlimits[0] + outlimits[1]) / 2
 
         def get_out(self, angle):
-            return util.clamp(util.map(angle, *(self.limits + self.outlimits)), *self.outlimits)
+            return util.clamp(
+                util.map(angle, *(self.limits + self.outlimits)),
+                *self.outlimits)
 
         def reset_limits(self):
             self.outlimits = (0, self.mc.limits[1] - self.mc.limits[0])
@@ -76,6 +95,12 @@ class MotorController(object):
         self.address = address
         self.num_motors = num_motors
 
+        self.MOTOR_CONTROL_OFFSET = 0
+        self.MOTOR_LIMITS_OFFSET = self.MOTOR_CONTROL_OFFSET + 2 * self.num_motors
+        self.RESET_FLAG_OFFSET = self.MOTOR_LIMITS_OFFSET + 4
+        self.ADC_OFFSET = self.RESET_FLAG_OFFSET + 2
+        self.MEM_LEN = self.ADC_OFFSET + 2
+
         self.reset_controller()
 
         self.read_limits()
@@ -88,20 +113,39 @@ class MotorController(object):
 
         self._values = [motor.out for motor in self.motors]
 
+    def readmem(self):
+        return retry_lambda(lambda: self.bus.read_i2c_block_data(
+            self.address, 0, self.MEM_LEN), [], retry_count)
+
+    def write_limits(self):
+        limits_data_buf = struct.pack('HH', *self.limits)
+        self._write_buffer(self.MOTOR_LIMITS_OFFSET, limits_data_buf)
+
     def read_limits(self):
-        limits_data = self.bus.read_i2c_block_data(self.address,
-                                                   self.num_motors * 2, 4)
+        limits_data = retry_lambda(lambda: self.bus.read_i2c_block_data(
+            self.address, self.MOTOR_LIMITS_OFFSET, 4), [], retry_count)
         limits_data_buf = ''.join(chr(x) for x in limits_data)
         self.limits = struct.unpack('HH', limits_data_buf)
 
     def read_adc(self):
-        adc_data = self.bus.read_i2c_block_data(self.address,
-                                                (self.num_motors * 2) + 4 + 2, 2)
+        adc_data = retry_lambda(lambda: self.bus.read_i2c_block_data(
+            self.address, self.ADC_OFFSET, 2), [], retry_count)
         adc_data_buf = ''.join(chr(x) for x in adc_data)
         self.raw_adc = struct.unpack('H', adc_data_buf)[0]
 
     def reset_controller(self):
-        self.bus.write_i2c_block_data(self.address, (self.num_motors * 2) + 4, [0xFF, 0xFF])
+        fail = True
+        try:
+            # We expect this to generate an IOError, because the transaction
+            # will get cut off by the device resetting
+            self.bus.write_i2c_block_data(self.address, self.RESET_FLAG_OFFSET,
+                                          [0xFF, 0xFF])
+        except IOError as e:
+            fail = False
+        if fail:
+            raise Exception("Failed to reset controller")
+        else:
+            time.sleep(0.1)
 
     @property
     def battery(self):
@@ -115,7 +159,8 @@ class MotorController(object):
 
     def _write_buffer(self, position, buf):
         bytes_out = [ord(c) for c in buf]
-        self.bus.write_i2c_block_data(self.address, position, bytes_out)
+        retry_lambda(lambda: self.bus.write_i2c_block_data(
+            self.address, position, bytes_out), [], retry_count)
 
     def _write_out(self):
         buf = struct.pack('H' * len(self._values), *self._values)

@@ -4,14 +4,38 @@ import numpy
 import threading
 import signal
 import sys
+import datetime
 
 import lib.control
 import lib.motion
 import lib.util
 
-from steamcontroller import SteamController
+from steamcontroller import SteamController, SCButtons
 
 import hexapod
+
+
+def log(*args):
+    sys.stdout.write('%s: %s\n' % (str(datetime.datetime.now()),
+                                   ''.join(str(a) for a in args)))
+    sys.stdout.flush()
+
+
+current_state = 0
+
+
+def log_state(state):
+    global current_state
+    if state != current_state:
+        log('state:', {
+            MotionPlanner.STATE_SHUTDOWN: 'shutdown',
+            MotionPlanner.STATE_EGG: 'egg',
+            MotionPlanner.STATE_SITTING: 'sitting',
+            MotionPlanner.STATE_IDLE: 'idle',
+            MotionPlanner.STATE_WALKING: 'walking'
+        }[state])
+        current_state = state
+
 
 num_directions = 24
 droutines = [
@@ -21,7 +45,7 @@ droutines = [
 raise_routine = lib.motion.read_routine('path/leg2_raise.dat')
 lower_routine = lib.motion.read_routine('path/leg2_lower.dat')
 
-THRESHOLD_FILL_LEVEL = 3
+THRESHOLD_FILL_LEVEL = 2
 
 # these needs to be updated by the control socket
 input_direction = 0
@@ -35,11 +59,13 @@ nondominant_mcs = [mcs[x] for x in [1, 3, 5]]
 class MotionPlanner(object):
     STATE_IDLE = 0  # all legs planted
     STATE_WALKING = 1
-    THRESHOLD_FILL_LEVEL = 3
+    STATE_SITTING = 2
+    STATE_EGG = 3
+    STATE_SHUTDOWN = 4
 
     def __init__(self, mcs, dominants, nondominants, doffsets, droutines,
                  raise_routine, lower_routine):
-        self.state = self.STATE_IDLE
+        self.state = self.STATE_EGG
         self.waitset = mcs
 
         self.droutines = droutines
@@ -49,6 +75,11 @@ class MotionPlanner(object):
         ]
         self.raise_routine = raise_routine
         self.lower_routine = lower_routine
+
+        parked_pos = (math.pi / 3, math.pi / 2, -math.pi)
+
+        self.de_eggify_routine = [(parked_pos, 1), (lower_routine[0][0], 0)]
+        self.eggify_routine = [(lower_routine[0][0], 1), (parked_pos, 0)]
 
         self.doffsets = doffsets
 
@@ -61,6 +92,14 @@ class MotionPlanner(object):
         self.direction = 0
         self.walk = False
 
+        self.shutting_down = False
+
+    def shutdown(self):
+        self.shutting_down = True
+
+    def wakeup(self):
+        self.shutting_down = False
+
     def need_update(self):
         if self.waitset == []:
             return True
@@ -71,8 +110,45 @@ class MotionPlanner(object):
         return False
 
     def get_next_plan(self):
-        if self.state == self.STATE_IDLE:
-            if self.walk == False:
+        log_state(self.state)
+        if self.state == self.STATE_SHUTDOWN:
+            if self.shutting_down:
+                if not hexapod.legs[0].enable:
+                    return
+                for leg in hexapod.legs:
+                    leg.enable = False
+                return
+            else:
+                for leg in hexapod.legs:
+                    leg.enable = True
+                self.waitset = []
+                self.state = self.STATE_EGG
+        elif self.state == self.STATE_EGG:
+            if self.shutting_down:
+                self.state = self.STATE_SHUTDOWN
+            else:
+                self.waitset = self.mcs
+                self.state = self.STATE_SITTING
+                for mc in self.mcs:
+                    mc.nqr(self.de_eggify_routine)
+        elif self.state == self.STATE_SITTING:
+            if self.shutting_down:
+                self.waitset = self.mcs
+                self.state = self.STATE_EGG
+                for mc in self.mcs:
+                    mc.nqr(self.eggify_routine)
+            else:
+                self.waitset = self.mcs
+                self.state = self.STATE_IDLE
+                for mc in self.mcs:
+                    mc.nqr(self.lower_routine)
+        elif self.state == self.STATE_IDLE:
+            if self.shutting_down:
+                self.waitset = self.mcs
+                self.state = self.STATE_SITTING
+                for mc in self.mcs:
+                    mc.nqr(self.raise_routine)
+            elif not self.walk:
                 self.waitset = []
             else:
                 self.state = self.STATE_WALKING
@@ -80,7 +156,7 @@ class MotionPlanner(object):
                 for mc in self.nondominant_mcs:
                     mc.nqr(self.raise_routine)
         elif self.state == self.STATE_WALKING:
-            if self.walk == True:
+            if self.walk and not self.shutting_down:
                 self.waitset = self.mcs
                 for mc, doffset in zip(self.dominant_mcs,
                                        self.dominant_doffsets):
@@ -97,25 +173,39 @@ class MotionPlanner(object):
                     mc.nqr(self.lower_routine)
 
     def get_update_task(self):
+
         def _update_task(t, dt):
             if not self.need_update():
                 return
 
             self.get_next_plan()
+
         return _update_task
 
 
-mp = MotionPlanner(mcs, [0, 2, 4], [1, 3, 5], [0, -4, -8, -12, -16, -20],
+mp = MotionPlanner(mcs, [0, 2, 4], [1, 3, 5], [-2, -6, -10, -14, -18, -22],
                    droutines, raise_routine, lower_routine)
 
 run_flag = True
 
+
 def update_control(_, control):
-    walk = math.sqrt(control.rpad_y ** 2 + control.rpad_x ** 2) > 2048
+    global run_flag
+    walk = math.sqrt(control.rpad_y**2 + control.rpad_x**2) > 2048
     if walk:
-        angle = int(math.atan2(control.rpad_y, -control.rpad_x) * num_directions / (2 * math.pi)) % num_directions
+        angle = int(
+            math.atan2(control.rpad_y, -control.rpad_x) * num_directions /
+            (2 * math.pi)) % num_directions
     else:
         angle = 0
+
+    if control.buttons & SCButtons.START:
+        mp.wakeup()
+    if control.buttons & SCButtons.BACK:
+        mp.shutdown()
+    if control.buttons & SCButtons.STEAM:
+        mp.shutdown()
+        run_flag = False
     mp.direction = angle
     mp.walk = walk
 
@@ -126,7 +216,8 @@ def server_thread():
         try:
             sc.handleEvents()
         except Exception as e:
-            print "Exception in listening thread:", e.message
+            log("Exception in listening thread:", e.message)
+
 
 def motion_plan_task(t, dt):
     for mc in mcs:
@@ -135,31 +226,37 @@ def motion_plan_task(t, dt):
 
 st = threading.Thread(target=server_thread)
 
+
 def signal_handler(signal, frame):
     global run_flag
     run_flag = False
-    print "Caught Ctrl-C. Exiting..."
+    mp.shutdown()
+    log("Caught Ctrl-C. Exiting...")
+
 
 signal.signal(signal.SIGINT, signal_handler)
 
-print "Starting listening thread"
+log("Starting listening thread")
 st.start()
 
-print "Enabling legs"
+log("Enabling legs")
 for leg in hexapod.legs:
     leg.enable = True
 
-print "Starting loop"
-lib.util.looper(lib.util.round_robin_dispatcher(mp.get_update_task(),
-                                                motion_plan_task
-                                                ),
-                run_test=(lambda : run_flag))
+log("Starting loop")
 
-print "Disabling legs"
+try:
+    lib.util.looper(
+        lib.util.round_robin_dispatcher(mp.get_update_task(), motion_plan_task),
+        run_test=(lambda: run_flag or not mp.state == mp.STATE_SHUTDOWN))
+except Exception as e:
+    log("Caught FATAL top level exception!")
+
+log("Disabling legs")
 for leg in hexapod.legs:
     leg.enable = False
 
 run_flag = False
 
-print "Joining listening thread"
+log("Joining listening thread")
 st.join()
