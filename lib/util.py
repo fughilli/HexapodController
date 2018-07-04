@@ -1,4 +1,4 @@
-from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import RegularGridInterpolator
 import ast
 import math
 import numpy
@@ -115,21 +115,21 @@ def save_interpolator(interp_file_name, interpolator):
 def load_lut(lut_file_name):
     with open(lut_file_name, 'r') as lutfile:
         d = pickle.loads(lutfile.read())
-        return (d['points'], d['pointdata'])
+        return (d['axes'], d['pointdata'])
 
 
-def save_lut(lut_file_name, points, pointdata):
+def save_lut(lut_file_name, axes, pointdata):
     with open(lut_file_name, 'w') as lutfile:
-        lutfile.write(pickle.dumps({'points': points, 'pointdata': pointdata}))
+        lutfile.write(pickle.dumps({'axes': axes, 'pointdata': pointdata}))
 
 
 def load_interpolator_from_lut(lut_file_name):
-    interp = LinearNDInterpolator(*load_lut(lut_file_name))
+    interp = RegularGridInterpolator(*load_lut(lut_file_name))
     return interp
 
 
-def make_interpolator_from_lut(points, pointdata):
-    return LinearNDInterpolator(points, pointdata)
+def make_interpolator_from_lut(axes, pointdata):
+    return RegularGridInterpolator(axes, pointdata)
 
 
 def split(array, n):

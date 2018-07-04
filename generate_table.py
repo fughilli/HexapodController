@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from joblib import Parallel, delayed
-from scipy.interpolate import LinearNDInterpolator
 import argparse
 import numpy
 import pickle
@@ -60,6 +59,7 @@ if args.xml:
     x = numpy.linspace(-radius, radius, 2 * subdivisions)
     y = numpy.linspace(-radius, radius, 2 * subdivisions)
     z = numpy.linspace(-radius, radius, 2 * subdivisions)
+    axes = (x, y, z)
 
     # Nx3 vector of grid points
     points = numpy.array(numpy.meshgrid(x, y, z)).T.reshape(-1, 3)
@@ -75,13 +75,15 @@ if args.xml:
 
     if args.lut:
         print 'Exporting LUT to %s' % (args.lut,)
-        lib.util.save_lut(args.lut, points, pointdata)
+        lib.util.save_lut(args.lut, axes, pointdata)
 elif args.lut:
     print 'Importing LUT from %s' % (args.lut,)
-    points, pointdata = lib.util.load_lut(args.lut)
+    axes, pointdata = lib.util.load_lut(args.lut)
 
 if args.interp:
     print 'Exporting interpolator to %s' % (args.interp,)
     lib.util.save_interpolator(args.interp,
                                lib.util.make_interpolator_from_lut(
-                                   points, pointdata))
+                                   axes,
+                                   pointdata.T.reshape(-1,
+                                                       len(x), len(y), len(z))))
